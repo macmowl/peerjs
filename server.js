@@ -1,25 +1,32 @@
 const express = require('express');
-const http = require('http');
-const path = require('path');
 const app = express();
-const server = http.createServer(app);
-const {ExpressPeerServer} = require('peer');
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+const { v4: uuidV4 } = require('uuid');
+
 const port = process.env.PORT || "8000";
 
-const peerServer = ExpressPeerServer(server, {
-	proxied: true,
-	debug: true,
-	path: '/myapp',
-	ssl: {}
+app.set('view engine', 'ejs')
+
+app.use(express.static('public'));
+
+app.get('/', (req, res) => {
+	res.redirect(`/${uuidV4()}`);
 });
 
-app.use(peerServer);
+app.get('/:room', (req, res) => {
+	res.render('room', { roomId: req.params.room})
+})
 
-app.use(express.static(path.join(__dirname)));
-
-app.get('/', (request, response) => {
-	response.sendFile(__dirname + "/index.html");
-});
+io.on('connection', socket => {
+	socket.on('join-room', (roomId, userId) => {
+		socket.join(roomId);
+		socket.to(roomId).emit('user-connected', userId);
+		socket.on('disconnect', () => {
+			socket.to(roomId).emit('user-disconnected', userId)
+		})
+	})
+})
 
 server.listen(port);
 console.log(`Listening on : ${port}`);

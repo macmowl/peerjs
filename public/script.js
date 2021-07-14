@@ -1,5 +1,6 @@
 const socket = io('/');
 const videoGrid = document.getElementById('video-grid');
+const videoMain = document.getElementById('video-main');
 const peer = new Peer(undefined, {
 	host: '/',
 	port: 8001,
@@ -7,7 +8,7 @@ const peer = new Peer(undefined, {
 const video = document.createElement('video');
 video.muted = true;
 const peers = {};
-
+let i = 1;
 navigator.mediaDevices.getUserMedia({
 	video: true,
 	audio: true,
@@ -16,6 +17,8 @@ navigator.mediaDevices.getUserMedia({
 	peer.on('call', call => {
 		call.answer(stream);
 		const video = document.createElement('video');
+		video.setAttribute('id', i);
+		i++;
 		call.on('stream', userVideoStream => {
 			addVideoStream(video, userVideoStream);
 		})
@@ -43,12 +46,20 @@ function addVideoStream(video, stream) {
 	video.addEventListener('loadedmetadata', () => {
 		video.play();
 	})
-	videoGrid.append(video);
+	if (i == 1) {
+		video.setAttribute('id', 'main');
+		videoMain.append(video);
+	} else {
+		videoGrid.append(video);
+	}
+	
 }
 
 function connectToNewUser(userId, stream) {
 	const call = peer.call(userId, stream);
 	const video = document.createElement('video');
+	video.setAttribute('id', i);
+	i++;
 	call.on('stream', userVideoStream => {
 		addVideoStream(video, userVideoStream);
 	});
